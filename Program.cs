@@ -18,17 +18,18 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>()
 
 builder.Services.Configure<IdentityOptions>(options =>
 {
+    // No email confirmation required for this project
     options.SignIn.RequireConfirmedAccount = false;
 });
 
-// Make sure unauthorized users go to the right login page
+// Make sure unauthorized users go to the Identity login page
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Identity/Account/Login";
     options.AccessDeniedPath = "/Identity/Account/AccessDenied";
 });
 
-// Local email sender
+// Local "fake" email sender (we already implemented this)
 builder.Services.AddTransient<IEmailSender, LocalEmailSender>();
 
 // Razor Pages + SignalR
@@ -37,13 +38,21 @@ builder.Services.AddSignalR();
 
 var app = builder.Build();
 
+//
+//  Apply EF Core migrations on startup (important for Render DB!)
+//
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate();   // creates Identity + Products tables if they don't exist
+}
+
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// When someone hits the root ("/"), send them to /Products.
-// Because /Products has [Authorize], they'll be redirected to the login page first.
+// Root ("/") -> /Products (and because of [Authorize] you'll be sent to Login first)
 app.MapGet("/", () => Results.Redirect("/Products"));
 
 app.MapRazorPages();
