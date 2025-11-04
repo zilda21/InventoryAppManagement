@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - InventoryApp</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+    <style>
+        .container{max-width:1100px;margin:2rem auto;padding:0 1rem}
+        h3{margin:.5rem 0 1rem}
+        .crud{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0}
+        .crud input{padding:.45rem .6rem;border:1px solid #ccc;border-radius:8px;width:200px}
+        .crud button{padding:.45rem .8rem;border:0;border-radius:8px;background:#2563eb;color:#fff;cursor:pointer}
+        .grid{width:100%;border-collapse:collapse;margin-top:1rem}
+        .grid th,.grid td{border-bottom:1px solid #eee;padding:.5rem .6rem;text-align:left}
+        .danger{background:#ef4444}
+    </style>
+</head>
+<body>
+    <main class="container">
+        @RenderBody()
+    </main>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

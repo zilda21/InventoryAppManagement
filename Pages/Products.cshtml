@@ -1,0 +1,227 @@
+@page
+@model InventoryApp.Pages.ProductsModel
+@{
+    ViewData["Title"] = "Products";
+}
+
+<div class="products-page">
+    <h2 class="products-title">
+        <span class="products-icon">📦</span>
+        <span>Products</span>
+    </h2>
+
+    <!-- ADD / UPDATE PRODUCT FORM -->
+    <form method="post" asp-page-handler="Add" class="product-form">
+        <!-- if EditId has a value, we are editing -->
+        <input type="hidden" name="EditId"
+               value="@(Model.EditId?.ToString() ?? "")" />
+
+        <input name="Name"
+               placeholder="Name"
+               value="@(Model.EditId.HasValue ? Model.Name : "")" />
+
+        <input name="Qty"
+               placeholder="Qty"
+               inputmode="numeric"
+               value="@(Model.EditId.HasValue ? Model.Qty.ToString() : "")" />
+
+        <input name="Price"
+               placeholder="Price"
+               inputmode="decimal"
+               value="@(Model.EditId.HasValue ? Model.Price.ToString() : "")" />
+
+        <button type="submit">
+            @(Model.EditId.HasValue ? "Update" : "Add")
+        </button>
+
+        @* Only show Cancel while editing *@
+        @if (Model.EditId.HasValue)
+        {
+            <button type="submit"
+                    asp-page-handler="CancelEdit"
+                    class="btn-cancel">
+                Cancel
+            </button>
+        }
+    </form>
+
+    <!-- PRODUCTS TABLE -->
+    <table class="products-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>Added</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var p in Model.Products)
+        {
+            <tr>
+                <td>@p.Id</td>
+                <td>@p.Name</td>
+                <td>@p.Quantity</td>
+                <td>@p.Price</td>
+                <td>@p.AddedOn.ToLocalTime()</td>
+                <td>
+                    <form method="post" asp-page-handler="Edit" class="inline-form">
+                        <input type="hidden" name="id" value="@p.Id" />
+                        <button type="submit" class="btn-edit">Edit</button>
+                    </form>
+
+                    <form method="post" asp-page-handler="Delete" class="delete-form inline-form">
+                        <input type="hidden" name="id" value="@p.Id" />
+                        <button type="submit" class="btn-delete">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+<style>
+    .products-page {
+        max-width: 900px;
+        margin: 40px auto;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .products-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        font-size: 2rem;
+    }
+
+    .products-icon {
+        font-size: 2.2rem;
+    }
+
+    .product-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .product-form input {
+        padding: 0.4rem 0.6rem;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        min-width: 150px;
+    }
+
+    .product-form button {
+        padding: 0.4rem 0.9rem;
+        border: none;
+        border-radius: 6px;
+        background-color: #2563eb;
+        color: #fff;
+        cursor: pointer;
+        font-weight: 500;
+    }
+
+    .product-form button:hover {
+        background-color: #1d4ed8;
+    }
+
+    .products-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 0.5rem;
+        font-size: 0.95rem;
+    }
+
+    .products-table th,
+    .products-table td {
+        padding: 0.45rem 0.6rem;
+        border-bottom: 1px solid #eee;
+        text-align: left;
+    }
+
+    .products-table thead th {
+        border-bottom: 2px solid #ddd;
+    }
+
+    .delete-form {
+        margin: 0;
+    }
+
+    .btn-delete {
+        padding: 0.25rem 0.7rem;
+        border: none;
+        border-radius: 4px;
+        background-color: #ef4444;
+        color: #fff;
+        cursor: pointer;
+        font-size: 0.8rem;
+    }
+
+    .btn-delete:hover {
+        background-color: #dc2626;
+    }
+
+    /* NEW: keep buttons inline */
+    .inline-form {
+        display: inline-block;
+        margin-right: 0.25rem;
+    }
+
+    .btn-edit {
+        padding: 0.25rem 0.7rem;
+        border: none;
+        border-radius: 4px;
+        background-color: #3b82f6;
+        color: #fff;
+        cursor: pointer;
+        font-size: 0.8rem;
+    }
+
+    .btn-edit:hover {
+        background-color: #2563eb;
+    }
+
+    .btn-cancel {
+        padding: 0.4rem 0.9rem;
+        border: none;
+        border-radius: 6px;
+        background-color: #e5e7eb;
+        color: #111827;
+        cursor: pointer;
+        font-weight: 500;
+    }
+
+    .btn-cancel:hover {
+        background-color: #d1d5db;
+    }
+</style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <!-- SignalR browser client -->
+    <script src="https://cdn.jsdelivr.net/npm/%40microsoft/signalr/dist/browser/signalr.min.js"></script>
+
+    <script>
+        // Connect to the /hubs/products SignalR hub
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/hubs/products")
+            .withAutomaticReconnect()
+            .build();
+
+        // When the server says "ProductsChanged", reload the page
+        connection.on("ProductsChanged", function () {
+            console.log("ProductsChanged received -> reloading");
+            window.location.reload();
+        });
+
+        connection.start()
+            .then(() => console.log("SignalR connected"))
+            .catch(err => console.error("SignalR error", err));
+    </script>
+}
