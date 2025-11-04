@@ -21,6 +21,13 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
+// Make sure login/redirect paths are correct
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Identity/Account/Login";
+    options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+});
+
 builder.Services.Configure<IdentityOptions>(o =>
 {
     o.SignIn.RequireConfirmedAccount = false;
@@ -55,6 +62,7 @@ app.UseAuthorization();
 app.MapRazorPages();
 app.MapHub<ProductHub>("/hubs/products");
 
+// Root → Login page
 app.MapGet("/", ctx =>
 {
     ctx.Response.Redirect("/Identity/Account/Login");
