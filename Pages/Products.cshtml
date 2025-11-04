@@ -8,7 +8,7 @@
     <div class="products-header">
         <h2 class="products-title">
             <span class="products-icon">📦</span>
-            <span>Products</span>
+            <span data-i18n-en="Products" data-i18n-fr="Produits">Products</span>
         </h2>
 
         <!-- Logout button -->
@@ -17,7 +17,12 @@
               asp-page="/Account/Logout"
               asp-route-returnUrl="/"
               class="logout-form">
-            <button type="submit" class="btn-logout">Logout</button>
+            <button type="submit"
+                    class="btn-logout"
+                    data-i18n-en="Logout"
+                    data-i18n-fr="Se déconnecter">
+                Logout
+            </button>
         </form>
     </div>
 
@@ -61,10 +66,10 @@
         <thead>
             <tr>
                 <th>#</th>
-                <th>Name</th>
-                <th>Qty</th>
-                <th>Price</th>
-                <th>Added</th>
+                <th data-i18n-en="Name" data-i18n-fr="Nom">Name</th>
+                <th data-i18n-en="Qty" data-i18n-fr="Qté">Qty</th>
+                <th data-i18n-en="Price" data-i18n-fr="Prix">Price</th>
+                <th data-i18n-en="Added" data-i18n-fr="Ajouté">Added</th>
                 <th></th>
             </tr>
         </thead>
@@ -80,12 +85,22 @@
                 <td>
                     <form method="post" asp-page-handler="Edit" class="inline-form">
                         <input type="hidden" name="id" value="@p.Id" />
-                        <button type="submit" class="btn-edit">Edit</button>
+                        <button type="submit"
+                                class="btn-edit"
+                                data-i18n-en="Edit"
+                                data-i18n-fr="Modifier">
+                            Edit
+                        </button>
                     </form>
 
                     <form method="post" asp-page-handler="Delete" class="delete-form inline-form">
                         <input type="hidden" name="id" value="@p.Id" />
-                        <button type="submit" class="btn-delete">Delete</button>
+                        <button type="submit"
+                                class="btn-delete"
+                                data-i18n-en="Delete"
+                                data-i18n-fr="Supprimer">
+                            Delete
+                        </button>
                     </form>
                 </td>
             </tr>
@@ -99,9 +114,14 @@
         max-width: 900px;
         margin: 40px auto;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background-color: var(--bg-card, #ffffff);
+        color: var(--text, #111827);
+        border-radius: 0.75rem;
+        padding: 1rem 1.25rem;
+        border: 1px solid var(--border, #e5e7eb);
     }
 
-    /* NEW: header line with title + logout */
+    /* header line with title + logout */
     .products-header {
         display: flex;
         align-items: center;
@@ -159,12 +179,12 @@
     .products-table th,
     .products-table td {
         padding: 0.45rem 0.6rem;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid var(--border, #eee);
         text-align: left;
     }
 
     .products-table thead th {
-        border-bottom: 2px solid #ddd;
+        border-bottom: 2px solid var(--border, #ddd);
     }
 
     .delete-form {
@@ -219,7 +239,7 @@
         background-color: #d1d5db;
     }
 
-    /* NEW: logout styles */
+    /* logout styles */
     .logout-form {
         margin: 0;
     }

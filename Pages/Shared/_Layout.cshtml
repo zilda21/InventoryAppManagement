@@ -6,20 +6,212 @@
     <title>@ViewData["Title"] - InventoryApp</title>
     <link rel="stylesheet" href="~/css/site.css" />
     <style>
-        .container{max-width:1100px;margin:2rem auto;padding:0 1rem}
-        h3{margin:.5rem 0 1rem}
-        .crud{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0}
-        .crud input{padding:.45rem .6rem;border:1px solid #ccc;border-radius:8px;width:200px}
-        .crud button{padding:.45rem .8rem;border:0;border-radius:8px;background:#2563eb;color:#fff;cursor:pointer}
-        .grid{width:100%;border-collapse:collapse;margin-top:1rem}
-        .grid th,.grid td{border-bottom:1px solid #eee;padding:.5rem .6rem;text-align:left}
-        .danger{background:#ef4444}
+        /* === THEME VARIABLES (LIGHT/DARK) ===================== */
+        :root {
+            color-scheme: light;
+            --bg: #f9fafb;
+            --bg-card: #ffffff;
+            --text: #111827;
+            --border: #e5e7eb;
+            --accent: #2563eb;
+        }
+
+        :root[data-theme='dark'] {
+            color-scheme: dark;
+            --bg: #020617;
+            --bg-card: #0b1120;
+            --text: #e5e7eb;
+            --border: #374151;
+            --accent: #3b82f6;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        /* === TOP HEADER ======================================= */
+        .app-header {
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 0.5rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .app-header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+
+        .app-header-title {
+            font-size: 1.1rem;
+        }
+
+        .app-header-right {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .theme-lang-select,
+        .theme-toggle-btn {
+            font-size: 0.85rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background-color: var(--bg-card);
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        .theme-toggle-btn:hover,
+        .theme-lang-select:hover {
+            border-color: var(--accent);
+        }
+
+        /* === EXISTING STYLES (left as they were) ============== */
+        .container {
+            max-width: 1100px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        h3 {
+            margin: .5rem 0 1rem;
+        }
+
+        .crud {
+            display: flex;
+            gap: .5rem;
+            flex-wrap: wrap;
+            margin: 1rem 0;
+        }
+
+        .crud input {
+            padding: .45rem .6rem;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            width: 200px;
+        }
+
+        .crud button {
+            padding: .45rem .8rem;
+            border: 0;
+            border-radius: 8px;
+            background: #2563eb;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .grid {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .grid th,
+        .grid td {
+            border-bottom: 1px solid #eee;
+            padding: .5rem .6rem;
+            text-align: left;
+        }
+
+        .danger {
+            background: #ef4444;
+        }
     </style>
 </head>
 <body>
+    <!-- NEW: App header with title, language + theme toggle -->
+    <header class="app-header">
+        <div class="app-header-left">
+            <span>📚</span>
+            <span class="app-header-title"
+                  data-i18n-en="Inventory App"
+                  data-i18n-fr="Application d'inventaire">
+                Inventory App
+            </span>
+        </div>
+
+        <div class="app-header-right">
+            <select id="language-selector" class="theme-lang-select">
+                <option value="en">EN</option>
+                <option value="fr">FR</option>
+            </select>
+
+            <button id="theme-toggle" class="theme-toggle-btn" type="button">
+                🌙 Dark
+            </button>
+        </div>
+    </header>
+
     <main class="container">
         @RenderBody()
     </main>
+
+    <!-- Theme + language script -->
+    <script>
+        (function () {
+            const THEME_KEY = 'app-theme';
+            const LANG_KEY = 'app-lang';
+
+            const root = document.documentElement;
+            const themeToggle = document.getElementById('theme-toggle');
+            const langSelect = document.getElementById('language-selector');
+
+            function applyTheme(theme) {
+                root.dataset.theme = theme;
+                if (themeToggle) {
+                    themeToggle.textContent = theme === 'dark' ? '☀ Light' : '🌙 Dark';
+                }
+            }
+
+            function applyLanguage(lang) {
+                if (langSelect) {
+                    langSelect.value = lang;
+                }
+                // Swap text on elements that have translations
+                document.querySelectorAll('[data-i18n-en]').forEach(el => {
+                    const text = lang === 'fr'
+                        ? el.getAttribute('data-i18n-fr')
+                        : el.getAttribute('data-i18n-en');
+                    if (text) {
+                        el.textContent = text;
+                    }
+                });
+            }
+
+            const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
+            const savedLang = localStorage.getItem(LANG_KEY) || 'en';
+
+            applyTheme(savedTheme);
+            applyLanguage(savedLang);
+
+            if (themeToggle) {
+                themeToggle.addEventListener('click', () => {
+                    const next = (root.dataset.theme === 'dark') ? 'light' : 'dark';
+                    localStorage.setItem(THEME_KEY, next);
+                    applyTheme(next);
+                });
+            }
+
+            if (langSelect) {
+                langSelect.addEventListener('change', (e) => {
+                    const lang = e.target.value;
+                    localStorage.setItem(LANG_KEY, lang);
+                    applyLanguage(lang);
+                });
+            }
+        })();
+    </script>
+
     @RenderSection("Scripts", required: false)
 </body>
 </html>
