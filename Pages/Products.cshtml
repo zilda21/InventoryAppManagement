@@ -5,10 +5,21 @@
 }
 
 <div class="products-page">
-    <h2 class="products-title">
-        <span class="products-icon">📦</span>
-        <span>Products</span>
-    </h2>
+    <div class="products-header">
+        <h2 class="products-title">
+            <span class="products-icon">📦</span>
+            <span>Products</span>
+        </h2>
+
+        <!-- Logout button -->
+        <form method="post"
+              asp-area="Identity"
+              asp-page="/Account/Logout"
+              asp-route-returnUrl="/Identity/Account/Login"
+              class="logout-form">
+            <button type="submit" class="btn-logout">Logout</button>
+        </form>
+    </div>
 
     <!-- ADD / UPDATE PRODUCT FORM -->
     <form method="post" asp-page-handler="Add" class="product-form">
@@ -90,12 +101,20 @@
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
+    /* NEW: header line with title + logout */
+    .products-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
     .products-title {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        margin-bottom: 1rem;
         font-size: 2rem;
+        margin: 0;
     }
 
     .products-icon {
@@ -166,7 +185,7 @@
         background-color: #dc2626;
     }
 
-    /* NEW: keep buttons inline */
+    /* keep buttons inline */
     .inline-form {
         display: inline-block;
         margin-right: 0.25rem;
@@ -198,6 +217,26 @@
 
     .btn-cancel:hover {
         background-color: #d1d5db;
+    }
+
+    /* NEW: logout styles */
+    .logout-form {
+        margin: 0;
+    }
+
+    .btn-logout {
+        padding: 0.3rem 0.8rem;
+        border: none;
+        border-radius: 6px;
+        background-color: #6b7280;
+        color: #fff;
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .btn-logout:hover {
+        background-color: #4b5563;
     }
 </style>
 
