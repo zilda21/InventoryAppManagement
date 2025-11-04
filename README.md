@@ -60,3 +60,30 @@ https://inventoryappmanagement-ztcu.onrender.com
    ```bash
    git clone https://github.com/zilda21/InventoryAppManagement.git
    cd InventoryAppManagement/InventoryApp
+   
+ **What could be improved / future work**
+
+If there is more time, these are the main directions to grow the project:
+
+Real “inventories” instead of one global product list
+
+Users create multiple inventories, each with its own items.
+
+Per-user permissions
+
+Owners & admins vs normal users, write access lists, public inventories.
+
+Custom fields and custom IDs for items (as in the full course spec).
+
+Admin panel
+
+Manage users, block/unblock, add/remove admin role.
+
+Full-text search over inventories and items.
+
+Social login (Google, Facebook) in addition to email/password.
+
+More translations and better coverage of the UI by the language system.
+
+Better visual design using a full CSS framework (e.g. Bootstrap or Tailwind) and component library.
+   
