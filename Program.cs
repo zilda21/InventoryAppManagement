@@ -8,62 +8,54 @@ using Npgsql; // for NpgsqlConnectionStringBuilder
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ----------------------------------------------------
-// 1. Choose connection string (local vs Render)
-// ----------------------------------------------------
+// 1. Choose the connection string (Render vs local)
 var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnection");
-
-// Render usually sets DATABASE_URL like:
-// postgres://user:password@host:5432/dbname
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 
 string connectionString;
 
-if (!string.IsNullOrEmpty(databaseUrl))
+if (!string.IsNullOrWhiteSpace(databaseUrl))
 {
-    // We are on Render – convert DATABASE_URL into Npgsql connection string
+    // On Render: convert DATABASE_URL -> Npgsql connection string
     connectionString = BuildConnectionStringFromDatabaseUrl(databaseUrl);
 }
 else
 {
-    // Local dev – use appsettings.json / appsettings.Development.json
-    connectionString = defaultConnection!;
+    // Local dev: use DefaultConnection from appsettings
+    if (string.IsNullOrWhiteSpace(defaultConnection))
+        throw new InvalidOperationException("No database connection string configured.");
+
+    connectionString = defaultConnection;
 }
 
-// DB
-builder.Services.AddDbContext<ApplicationDbContext>(opts =>
-    opts.UseNpgsql(connectionString));
+// 2. DB + Identity + services
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(connectionString));
 
-// Identity
 builder.Services.AddIdentity<IdentityUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-builder.Services.Configure<IdentityOptions>(o =>
+builder.Services.Configure<IdentityOptions>(options =>
 {
-    o.SignIn.RequireConfirmedAccount = false;
+    options.SignIn.RequireConfirmedAccount = false;
 });
 
 builder.Services.AddTransient<IEmailSender, LocalEmailSender>();
 
-// Razor Pages + SignalR
 builder.Services.AddRazorPages();
 builder.Services.AddSignalR();
 
 var app = builder.Build();
 
-// ----------------------------------------------------
-// 2. Apply EF migrations at startup (creates tables on Render)
-// ----------------------------------------------------
+// 3. Apply EF migrations at startup (creates tables on Render)
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate();
 }
 
-// ----------------------------------------------------
-// 3. Normal middleware pipeline
-// ----------------------------------------------------
+// 4. Normal middleware pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
@@ -80,7 +72,7 @@ app.UseAuthorization();
 app.MapRazorPages();
 app.MapHub<ProductHub>("/hubs/products");
 
-// Root path → redirect to login
+// Root path → login page
 app.MapGet("/", ctx =>
 {
     ctx.Response.Redirect("/Identity/Account/Login");
@@ -89,15 +81,11 @@ app.MapGet("/", ctx =>
 
 app.Run();
 
-
-// ----------------------------------------------------
-// Helper: convert Render's DATABASE_URL into Npgsql string
-// ----------------------------------------------------
+// Helper: convert Render's DATABASE_URL into an Npgsql connection string
 static string BuildConnectionStringFromDatabaseUrl(string databaseUrl)
 {
     var uri = new Uri(databaseUrl);
 
-    // user:password
     var userInfo = uri.UserInfo.Split(':', 2);
     var username = userInfo[0];
     var password = userInfo.Length > 1 ? userInfo[1] : "";
@@ -105,11 +93,11 @@ static string BuildConnectionStringFromDatabaseUrl(string databaseUrl)
     var builder = new NpgsqlConnectionStringBuilder
     {
         Host = uri.Host,
-        Port = uri.Port == -1 ? 5432 : uri.Port, // fallback if port missing
+        Port = uri.Port == -1 ? 5432 : uri.Port,  // default port
         Username = username,
         Password = password,
         Database = uri.LocalPath.TrimStart('/'),
-        SslMode = SslMode.Require        // <- removed TrustServerCertificate
+        SslMode = SslMode.Require
     };
 
     return builder.ConnectionString;
