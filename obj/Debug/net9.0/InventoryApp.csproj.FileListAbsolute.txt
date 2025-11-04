@@ -241,6 +241,7 @@ C:\Users\Admin\OneDrive\Bureau\InventoryApp\InventoryApp\obj\Debug\net9.0\Invent
 C:\Users\Admin\OneDrive\Bureau\InventoryApp\InventoryApp\obj\Debug\net9.0\InventoryApp.MvcApplicationPartsAssemblyInfo.cache
 C:\Users\Admin\OneDrive\Bureau\InventoryApp\InventoryApp\obj\Debug\net9.0\InventoryApp.RazorAssemblyInfo.cache
 C:\Users\Admin\OneDrive\Bureau\InventoryApp\InventoryApp\obj\Debug\net9.0\InventoryApp.RazorAssemblyInfo.cs
+C:\Users\Admin\OneDrive\Bureau\InventoryApp\InventoryApp\obj\Debug\net9.0\InventoryApp.sourcelink.json
 C:\Users\Admin\OneDrive\Bureau\InventoryApp\InventoryApp\obj\Debug\net9.0\rjimswa.dswa.cache.json
 C:\Users\Admin\OneDrive\Bureau\InventoryApp\InventoryApp\obj\Debug\net9.0\rjsmrazor.dswa.cache.json
 C:\Users\Admin\OneDrive\Bureau\InventoryApp\InventoryApp\obj\Debug\net9.0\rjsmcshtml.dswa.cache.json
