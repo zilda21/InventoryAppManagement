@@ -6,8 +6,9 @@ Built with **ASP.NET Core Razor Pages**, **PostgreSQL**, and **ASP.NET Identity*
 🔗 **Live demo**  
 https://inventoryappmanagement-ztcu.onrender.com
 
+<img width="1919" height="915" alt="image" src="https://github.com/user-attachments/assets/29920620-960d-453a-8cfa-7ae8142c49f2" />
 
----
+
 
 ## What the app does (current scope)
 
@@ -75,7 +76,7 @@ Owners & admins vs normal users, write access lists, public inventories.
 
 Custom fields and custom IDs for items (as in the full course spec).
 
-Admin panel
+Admin panel.
 
 Manage users, block/unblock, add/remove admin role.
 
