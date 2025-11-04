@@ -7,53 +7,57 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Database
+// ---------------- DB ----------------
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Identity
-builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+// ---------------- Identity ----------------
+builder.Services
+    .AddIdentity<IdentityUser, IdentityRole>(options =>
+    {
+        // Don’t force email confirmation for this project
+        options.SignIn.RequireConfirmedAccount = false;
+    })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-builder.Services.Configure<IdentityOptions>(options =>
-{
-    // No email confirmation required for this project
-    options.SignIn.RequireConfirmedAccount = false;
-});
-
-// Make sure unauthorized users go to the Identity login page
-builder.Services.ConfigureApplicationCookie(options =>
-{
-    options.LoginPath = "/Identity/Account/Login";
-    options.AccessDeniedPath = "/Identity/Account/AccessDenied";
-});
-
-// Local "fake" email sender (we already implemented this)
+// email sender (local stub)
 builder.Services.AddTransient<IEmailSender, LocalEmailSender>();
 
-// Razor Pages + SignalR
+// ---------------- UI + SignalR ----------------
 builder.Services.AddRazorPages();
 builder.Services.AddSignalR();
 
 var app = builder.Build();
 
-//
-//  Apply EF Core migrations on startup (important for Render DB!)
-//
+// ---------- Apply migrations on startup ----------
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    db.Database.Migrate();   // creates Identity + Products tables if they don't exist
+    db.Database.Migrate();   // <== line that shows up in logs
 }
 
+// ---------- Middleware ----------
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error");
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
 app.UseStaticFiles();
+
 app.UseRouting();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Root ("/") -> /Products (and because of [Authorize] you'll be sent to Login first)
-app.MapGet("/", () => Results.Redirect("/Products"));
+// Default root: redirect "/" to Products (which is [Authorize])
+app.MapGet("/", context =>
+{
+    context.Response.Redirect("/Products");
+    return Task.CompletedTask;
+});
 
 app.MapRazorPages();
 app.MapHub<ProductHub>("/hubs/products");
