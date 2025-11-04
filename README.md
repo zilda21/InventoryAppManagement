@@ -4,8 +4,8 @@ Small web app for managing products in an inventory.
 Built with **ASP.NET Core Razor Pages**, **PostgreSQL**, and **ASP.NET Identity**.
 
 🔗 **Live demo**  
-https://inventoryappmanagement-ztcu.onrender.com  
-_(replace with your own Render URL if this changes)_
+https://inventoryappmanagement-ztcu.onrender.com
+
 
 ---
 
