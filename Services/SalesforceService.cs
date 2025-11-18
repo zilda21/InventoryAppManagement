@@ -26,10 +26,16 @@ namespace InventoryApp.Services
             _options = options.Value;
         }
 
-        // Get OAuth access token using password flow.
+        // -------------------- OAuth token (username-password flow) --------------------
         private async Task<string> GetAccessTokenAsync()
         {
+            // For Developer / Production orgs
             var tokenEndpoint = "https://login.salesforce.com/services/oauth2/token";
+            // For sandbox it would be:
+            // var tokenEndpoint = "https://test.salesforce.com/services/oauth2/token";
+
+            // Build password + security token here
+            var passwordPlusToken = _options.Password + _options.SecurityToken;
 
             var body = new Dictionary<string, string>
             {
@@ -37,8 +43,7 @@ namespace InventoryApp.Services
                 ["client_id"]     = _options.ClientId,
                 ["client_secret"] = _options.ClientSecret,
                 ["username"]      = _options.Username,
-                // IMPORTANT: this must be   password + securityToken
-                ["password"]      = _options.Password
+                ["password"]      = passwordPlusToken
             };
 
             var response = await _httpClient.PostAsync(
@@ -54,10 +59,17 @@ namespace InventoryApp.Services
             }
 
             using var doc = JsonDocument.Parse(content);
-            return doc.RootElement.GetProperty("access_token").GetString()
-                   ?? throw new InvalidOperationException("Salesforce auth response missing access_token");
+            var token = doc.RootElement.GetProperty("access_token").GetString();
+
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                throw new InvalidOperationException("Salesforce auth response missing access_token.");
+            }
+
+            return token;
         }
 
+        // -------------------- Create Account + Contact --------------------
         public async Task CreateAccountAndContactAsync(
             string accountName,
             string firstName,
@@ -70,10 +82,10 @@ namespace InventoryApp.Services
             _httpClient.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", accessToken);
 
-            // ---------------- 1) Create Account ----------------
+            // 1) Create Account
             var accountPayload = new
             {
-                Name = accountName   // required field for Account
+                Name = accountName   // required for Account
             };
 
             var accountResponse = await _httpClient.PostAsJsonAsync(
@@ -96,11 +108,11 @@ namespace InventoryApp.Services
                 throw new ApplicationException("Salesforce account create succeeded but returned no Id.");
             }
 
-            // ---------------- 2) Create Contact ----------------
+            // 2) Create Contact
             var contactPayload = new
             {
                 FirstName = firstName,
-                LastName  = lastName,  // LastName is required for Contact
+                LastName  = lastName,  // required for Contact
                 Email     = email,
                 AccountId = accountId
             };
