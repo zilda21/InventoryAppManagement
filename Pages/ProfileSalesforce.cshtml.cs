@@ -3,6 +3,7 @@ using InventoryApp.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Logging;
 
 namespace InventoryApp.Pages;
 
@@ -10,10 +11,14 @@ namespace InventoryApp.Pages;
 public class ProfileSalesforceModel : PageModel
 {
     private readonly ISalesforceService _salesforceService;
+    private readonly ILogger<ProfileSalesforceModel> _logger;
 
-    public ProfileSalesforceModel(ISalesforceService salesforceService)
+    public ProfileSalesforceModel(
+        ISalesforceService salesforceService,
+        ILogger<ProfileSalesforceModel> logger)
     {
         _salesforceService = salesforceService;
+        _logger = logger;
     }
 
     [BindProperty, Required]
@@ -30,7 +35,6 @@ public class ProfileSalesforceModel : PageModel
 
     public void OnGet()
     {
-        // Pre-fill Email with current user name if appropriate
         if (string.IsNullOrEmpty(Email) && User?.Identity?.Name is string name)
             Email = name;
     }
@@ -40,13 +44,22 @@ public class ProfileSalesforceModel : PageModel
         if (!ModelState.IsValid)
             return Page();
 
-        await _salesforceService.CreateAccountAndContactAsync(
-            AccountName,
-            FirstName,
-            LastName,
-            Email);
+        try
+        {
+            await _salesforceService.CreateAccountAndContactAsync(
+                AccountName,
+                FirstName,
+                LastName,
+                Email);
 
-        TempData["SalesforceMessage"] = "Salesforce Account + Contact created.";
+            TempData["SalesforceMessage"] = "Salesforce Account + Contact created.";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Salesforce integration failed");
+            TempData["SalesforceMessage"] = "Salesforce error: " + ex.Message;
+        }
+
         return RedirectToPage();
     }
 }
