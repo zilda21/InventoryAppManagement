@@ -141,15 +141,30 @@
         </div>
 
         <div class="app-header-right">
-            <select id="language-selector" class="theme-lang-select">
-                <option value="en">EN</option>
-                <option value="fr">FR</option>
-            </select>
+    <!-- navigation buttons -->
+    <a asp-page="/Products" class="theme-toggle-btn">
+        Products
+    </a>
 
-            <button id="theme-toggle" class="theme-toggle-btn" type="button">
-                🌙 Dark
-            </button>
-        </div>
+    <a asp-page="/ProfileSalesforce" class="theme-toggle-btn">
+        Salesforce CRM
+    </a>
+
+    <a asp-page="/SupportTicket" class="theme-toggle-btn">
+        Help / Support
+    </a>
+
+    <!-- existing language + theme controls -->
+    <select id="language-selector" class="theme-lang-select">
+        <option value="en">EN</option>
+        <option value="fr">FR</option>
+    </select>
+
+    <button id="theme-toggle" class="theme-toggle-btn" type="button">
+        🌙 Dark
+    </button>
+</div>
+
     </header>
 
     <main class="container">

@@ -1,0 +1,32 @@
+@page
+@model InventoryApp.Pages.ProfileSalesforceModel
+@{
+    ViewData["Title"] = "Salesforce Integration";
+}
+
+<h2>Salesforce Integration</h2>
+
+@if (TempData["SalesforceMessage"] is string msg)
+{
+    <div class="alert alert-success">@msg</div>
+}
+
+<form method="post" class="product-form">
+    <input asp-for="AccountName" placeholder="Account name (Company)" />
+    <span asp-validation-for="AccountName"></span>
+
+    <input asp-for="FirstName" placeholder="First name" />
+    <span asp-validation-for="FirstName"></span>
+
+    <input asp-for="LastName" placeholder="Last name" />
+    <span asp-validation-for="LastName"></span>
+
+    <input asp-for="Email" placeholder="Email" />
+    <span asp-validation-for="Email"></span>
+
+    <button type="submit">Create in Salesforce</button>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
