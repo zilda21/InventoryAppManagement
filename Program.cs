@@ -1,94 +1,65 @@
 using InventoryApp.Data;
 using InventoryApp.Hubs;
 using InventoryApp.Services;
+using InventoryApp.config;
+
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
-using InventoryApp.Config;
-
-
-
-// var builder for creats the host nad read the config //appsetting jsn that have the connection string 
+using Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore;  // for AddDatabaseDeveloperPageExceptionFilter & UseMigrationsEndPoint
 
 var builder = WebApplication.CreateBuilder(args);
- 
-// This will read:
-// - appsettings.json -> ConnectionStrings:DefaultConnection
-// - overridden by env var ConnectionStrings__DefaultConnection (Render)
 
+// ----------------- DB + Identity -----------------
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+    ?? throw new InvalidOperationException(
+        "Connection string 'DefaultConnection' not found.");
 
-//  EF  npgsql   Postgresql
-builder.Services.AddDbContext<ApplicationDbContext>(opts =>
-    opts.UseNpgsql(connectionString));
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(connectionString));
 
-// so basicaly it addds to teh asp.net core the idnetitiy of user  and their role by default and it stores in teh applicationdb context 
+// nice EF Core error pages in development
+builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddIdentity<IdentityUser, IdentityRole>()
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultTokenProviders();
+builder.Services.AddDefaultIdentity<IdentityUser>(options =>
+    {
+        options.SignIn.RequireConfirmedAccount = false;
+    })
+    .AddEntityFrameworkStores<ApplicationDbContext>();
 
-
-builder.Services.ConfigureApplicationCookie(options =>
-{
-    options.LoginPath = "/Identity/Account/Login";
-    options.AccessDeniedPath = "/Identity/Account/AccessDenied";
-});
-
-builder.Services.Configure<SalesforceOptions>(
-    builder.Configuration.GetSection("Salesforce"));
-
-builder.Services.AddHttpClient<ISalesforceService, SalesforceService>();
-
-
-// in this project its not required for email confirmation to sing in/to register 
-// builder.Services.Configure<IdentityOptions>(o =>
-// {
-//     o.SignIn.RequireConfirmedAccount = false;
-// });
-
-// when the identitty need to send emails /register reset  it uses my local email sneder implementaiton exmample logging to console or file instiad of real SMTP 
-// builder.Services.AddTransient<IEmailSender, LocalEmailSender>();
-
+// ----------------- MVC / SignalR -----------------
 builder.Services.AddRazorPages();
 builder.Services.AddSignalR();
 
+// ----------------- Salesforce -----------------
+builder.Services.Configure<SalesforceOptions>(
+    builder.Configuration.GetSection(SalesforceOptions.SectionName));
+
+builder.Services.AddHttpClient<SalesforceService>();
+builder.Services.AddScoped<ISalesforceService, SalesforceService>();
+
+// ----------------- Build app -----------------
 var app = builder.Build();
 
-// AIT CREATE A di SCOPE, gets the applicaitondbcontext, run migrate()
-
-using (var scope = app.Services.CreateScope())
+if (app.Environment.IsDevelopment())
 {
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    db.Database.Migrate();
+    app.UseDeveloperExceptionPage();
+    app.UseMigrationsEndPoint(); // migrations endpoint for dev only
 }
-// in the productioni t shpows frindly error (/ERROR) and it redirect to HSTS
-// to avoid the fact that the app is not running ion http , it redirect from http to https 
-// it serve static file like (css, js,etc)
-if (!app.Environment.IsDevelopment())
+else
 {
     app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
+
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-
 app.UseRouting();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
-// maps all the razor pages pages/.cshtml
-//  maps you signalR hub to hubs/products
 app.MapRazorPages();
-app.MapHub<ProductHub>("/hubs/products");
-
-
-app.MapGet("/", ctx =>
-{
-    ctx.Response.Redirect("/Identity/Account/Login");
-    return Task.CompletedTask;
-});
+app.MapHub<ProductHub>("/productHub");
 
 app.Run();

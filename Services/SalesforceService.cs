@@ -1,89 +1,130 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using InventoryApp.Config;
+using InventoryApp.config;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace InventoryApp.Services;
-
-public interface ISalesforceService
+namespace InventoryApp.Services
 {
-    Task CreateAccountAndContactAsync(string accountName, string firstName, string lastName, string email);
-}
-
-public class SalesforceService : ISalesforceService
-{
-    private readonly HttpClient _httpClient;
-    private readonly SalesforceOptions _options;
-    private string? _accessToken;
-
-    public SalesforceService(HttpClient httpClient, IOptions<SalesforceOptions> options)
+    public class SalesforceAuthResponse
     {
-        _httpClient = httpClient;
-        _options = options.Value;
+        public string access_token { get; set; } = string.Empty;
+        public string instance_url { get; set; } = string.Empty;
+        public string token_type { get; set; } = string.Empty;
     }
 
-    private async Task EnsureAccessTokenAsync()
+    public interface ISalesforceService
     {
-        if (!string.IsNullOrEmpty(_accessToken))
-            return;
-
-        var body = new FormUrlEncodedContent(new[]
-        {
-            new KeyValuePair<string,string>("grant_type", "password"),
-            new KeyValuePair<string,string>("client_id", _options.ClientId),
-            new KeyValuePair<string,string>("client_secret", _options.ClientSecret),
-            new KeyValuePair<string,string>("username", _options.Username),
-            new KeyValuePair<string,string>("password", _options.Password)
-        });
-
-        var tokenUrl = $"{_options.InstanceUrl}/services/oauth2/token";
-        var resp = await _httpClient.PostAsync(tokenUrl, body);
-        resp.EnsureSuccessStatusCode();
-
-        using var stream = await resp.Content.ReadAsStreamAsync();
-        var doc = await JsonDocument.ParseAsync(stream);
-        _accessToken = doc.RootElement.GetProperty("access_token").GetString();
+        Task CreateAccountAndContactAsync(
+            string accountName,
+            string firstName,
+            string lastName,
+            string email);
     }
 
-    public async Task CreateAccountAndContactAsync(string accountName, string firstName, string lastName, string email)
+    public class SalesforceService : ISalesforceService
     {
-        await EnsureAccessTokenAsync();
+        private readonly HttpClient _httpClient;
+        private readonly SalesforceOptions _options;
+        private readonly ILogger<SalesforceService> _logger;
 
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _accessToken);
+        private string? _accessToken;
 
-        // 1) Create Account
-        var accountPayload = new { Name = accountName };
-        var accountContent = new StringContent(
-            JsonSerializer.Serialize(accountPayload),
-            Encoding.UTF8,
-            "application/json");
-
-        var accountUrl = $"{_options.InstanceUrl}/services/data/v61.0/sobjects/Account";
-        var accResp = await _httpClient.PostAsync(accountUrl, accountContent);
-        accResp.EnsureSuccessStatusCode();
-
-        using var accStream = await accResp.Content.ReadAsStreamAsync();
-        var accDoc = await JsonDocument.ParseAsync(accStream);
-        var accountId = accDoc.RootElement.GetProperty("id").GetString();
-
-        // 2) Create Contact linked to that Account
-        var contactPayload = new
+        public SalesforceService(
+            HttpClient httpClient,
+            IOptions<SalesforceOptions> options,
+            ILogger<SalesforceService> logger)
         {
-            FirstName = firstName,
-            LastName = lastName,
-            Email = email,
-            AccountId = accountId
-        };
+            _httpClient = httpClient;
+            _options = options.Value;
+            _logger = logger;
 
-        var contactContent = new StringContent(
-            JsonSerializer.Serialize(contactPayload),
-            Encoding.UTF8,
-            "application/json");
+            if (!string.IsNullOrEmpty(_options.InstanceUrl))
+            {
+                _httpClient.BaseAddress = new Uri(_options.InstanceUrl);
+            }
+        }
 
-        var contactUrl = $"{_options.InstanceUrl}/services/data/v61.0/sobjects/Contact";
-        var contactResp = await _httpClient.PostAsync(contactUrl, contactContent);
-        contactResp.EnsureSuccessStatusCode();
+        private async Task EnsureAccessTokenAsync()
+        {
+            if (!string.IsNullOrEmpty(_accessToken))
+            {
+                return;
+            }
+
+            var content = new FormUrlEncodedContent(new[]
+            {
+                new KeyValuePair<string,string>("grant_type", "password"),
+                new KeyValuePair<string,string>("client_id", _options.ClientId),
+                new KeyValuePair<string,string>("client_secret", _options.ClientSecret),
+                new KeyValuePair<string,string>("username", _options.Username),
+                new KeyValuePair<string,string>("password", _options.Password) // password + token
+            });
+
+            var response = await _httpClient.PostAsync("/services/oauth2/token", content);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+            var auth = JsonSerializer.Deserialize<SalesforceAuthResponse>(json);
+
+            if (auth == null || string.IsNullOrWhiteSpace(auth.access_token))
+            {
+                throw new Exception("Could not obtain Salesforce access token.");
+            }
+
+            _accessToken = auth.access_token;
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", _accessToken);
+        }
+
+        public async Task CreateAccountAndContactAsync(
+            string accountName,
+            string firstName,
+            string lastName,
+            string email)
+        {
+            await EnsureAccessTokenAsync();
+
+            // ---- Create Account ----
+            var accountPayload = new { Name = accountName };
+            var accountContent = new StringContent(
+                JsonSerializer.Serialize(accountPayload),
+                Encoding.UTF8,
+                "application/json");
+
+            var accountResponse = await _httpClient.PostAsync(
+                "/services/data/v58.0/sobjects/Account",
+                accountContent);
+
+            accountResponse.EnsureSuccessStatusCode();
+
+            var accountJson = await accountResponse.Content.ReadAsStringAsync();
+            using var accountDoc = JsonDocument.Parse(accountJson);
+            var accountId = accountDoc.RootElement.GetProperty("id").GetString();
+
+            // ---- Create Contact ----
+            var contactPayload = new
+            {
+                FirstName = firstName,
+                LastName = lastName,
+                Email = email,
+                AccountId = accountId
+            };
+
+            var contactContent = new StringContent(
+                JsonSerializer.Serialize(contactPayload),
+                Encoding.UTF8,
+                "application/json");
+
+            var contactResponse = await _httpClient.PostAsync(
+                "/services/data/v58.0/sobjects/Contact",
+                contactContent);
+
+            contactResponse.EnsureSuccessStatusCode();
+
+            var body = await contactResponse.Content.ReadAsStringAsync();
+            _logger.LogInformation("Salesforce contact created successfully: {Body}", body);
+        }
     }
 }

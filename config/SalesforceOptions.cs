@@ -1,10 +1,19 @@
-namespace InventoryApp.Config;
+using System;
 
-public class SalesforceOptions
+namespace InventoryApp.config
 {
-    public string InstanceUrl { get; set; } = "";
-    public string ClientId { get; set; } = "";
-    public string ClientSecret { get; set; } = "";
-    public string Username { get; set; } = "";
-    public string Password { get; set; } = "";
+    public class SalesforceOptions
+    {
+        public const string SectionName = "Salesforce";
+
+        public string InstanceUrl { get; set; } = string.Empty;
+        public string ClientId { get; set; } = string.Empty;
+        public string ClientSecret { get; set; } = string.Empty;
+
+        // Username of your Salesforce user (the same that you used for the token)
+        public string Username { get; set; } = string.Empty;
+
+        // Password **plus** security token concatenated
+        public string Password { get; set; } = string.Empty;
+    }
 }
